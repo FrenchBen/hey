@@ -22,11 +22,13 @@ import (
 	"io/ioutil"
 	"net/http"
 	"net/http/httptrace"
+	"net/http/httputil"
 	"net/url"
 	"os"
 	"sync"
 	"time"
 
+	log "github.com/sirupsen/logrus"
 	"golang.org/x/net/http2"
 )
 
@@ -98,6 +100,9 @@ type Work struct {
 	start    time.Duration
 
 	report *report
+
+	// Dump body to file if debug is enabled
+	LogFile *os.File
 }
 
 func (b *Work) writer() io.Writer {
@@ -186,6 +191,21 @@ func (b *Work) makeRequest(c *http.Client) {
 	if err == nil {
 		size = resp.ContentLength
 		code = resp.StatusCode
+		if b.LogFile != nil {
+			//&& code >= http.StatusMultipleChoices
+			// write body of request to logfile
+			b, err := httputil.DumpResponse(resp, true)
+			if err != nil {
+				log.Fatalln(err)
+			}
+			// possible cleanup of body data
+			// re := regexp.MustCompile(`\r?\n`)
+			// log.Debug(strings.Replace(string(b), `\n`, "\n", -1))
+			log.WithFields(log.Fields{
+				"status_code": code,
+			}).Debug(string(b))
+
+		}
 		io.Copy(ioutil.Discard, resp.Body)
 		resp.Body.Close()
 	}

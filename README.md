@@ -11,20 +11,23 @@ To preserve the name for its original owner, we renamed this project to hey.
 
 ## Installation
 
-* Linux 64-bit: https://hey-release.s3.us-east-2.amazonaws.com/hey_linux_amd64
-* Mac 64-bit: https://hey-release.s3.us-east-2.amazonaws.com/hey_darwin_amd64
-* Windows 64-bit: https://hey-release.s3.us-east-2.amazonaws.com/hey_windows_amd64
+- Linux 64-bit: https://hey-release.s3.us-east-2.amazonaws.com/hey_linux_amd64
+- Mac 64-bit: https://hey-release.s3.us-east-2.amazonaws.com/hey_darwin_amd64
+- Windows 64-bit: https://hey-release.s3.us-east-2.amazonaws.com/hey_windows_amd64
 
 ### Package Managers
 
 macOS:
--  [Homebrew](https://brew.sh/) users can use `brew install hey`.
+
+- [Homebrew](https://brew.sh/) users can use `brew install hey`.
 
 ## Usage
 
 hey runs provided number of requests in the provided concurrency level and prints stats.
 
 It also supports HTTP2 endpoints.
+
+All options need to appear before the <url>
 
 ```
 Usage: hey [options...] <url>
@@ -64,3 +67,13 @@ Options:
 ```
 
 Previously known as [github.com/rakyll/boom](https://github.com/rakyll/boom).
+
+## Example
+
+We will be using [BeeCeptor](https://beeceptor.com/) to test the functionality, 50req/day can be made which that are logged here: https://beeceptor.com/console/hey-test
+
+```
+hey -n 10 -c 5 -m GET -H 'some-header: some-value' 'https://hey-test.free.beeceptor.com/my/api/path'
+```
+
+_NB: If the above link doesn't work, feel free to create a new one for your testing here: [BeeCeptor](https://beeceptor.com/)_

@@ -30,17 +30,20 @@ import (
 	"time"
 
 	"github.com/rakyll/hey/requester"
+	log "github.com/sirupsen/logrus"
 )
 
 const (
 	headerRegexp = `^([\w-]+):\s*(.+)`
 	authRegexp   = `^(.+):([^\s].+)`
 	heyUA        = "hey/0.0.1"
+	heyLogs      = "./hey.log"
 )
 
 var (
-	m           = flag.String("m", "GET", "")
+	// headers is deprecated and now declared as a headerSlice
 	headers     = flag.String("h", "", "")
+	m           = flag.String("m", "GET", "")
 	body        = flag.String("d", "", "")
 	bodyFile    = flag.String("D", "", "")
 	accept      = flag.String("A", "", "")
@@ -57,8 +60,9 @@ var (
 	t = flag.Int("t", 20, "")
 	z = flag.Duration("z", 0, "")
 
-	h2   = flag.Bool("h2", false, "")
-	cpus = flag.Int("cpus", runtime.GOMAXPROCS(-1), "")
+	h2          = flag.Bool("h2", false, "")
+	debugHeader = flag.Bool("debug", false, "")
+	cpus        = flag.Int("cpus", runtime.GOMAXPROCS(-1), "")
 
 	disableCompression = flag.Bool("disable-compression", false, "")
 	disableKeepAlives  = flag.Bool("disable-keepalive", false, "")
@@ -101,6 +105,7 @@ Options:
   -disable-redirects    Disable following of HTTP redirects
   -cpus                 Number of used cpu cores.
                         (default for current machine is %d cores)
+  -debug	Enable header debugging
 `
 
 func main() {
@@ -112,6 +117,16 @@ func main() {
 	flag.Var(&hs, "H", "")
 
 	flag.Parse()
+
+	var logFile *os.File
+	// set debugging logs if enabled
+	if *debugHeader {
+		log.SetLevel(log.DebugLevel)
+		logFile = openLogFile(heyLogs)
+		log.SetOutput(logFile)
+		log.SetFormatter(&log.JSONFormatter{})
+		// log.SetFormatter(&log.TextFormatter{})
+	}
 	if flag.NArg() < 1 {
 		usageAndExit("")
 	}
@@ -203,6 +218,7 @@ func main() {
 	// set host header if set
 	if *hostHeader != "" {
 		req.Host = *hostHeader
+		header.Set("Host", *hostHeader)
 	}
 
 	ua := header.Get("User-Agent")
@@ -218,6 +234,7 @@ func main() {
 		ua = *userAgent + " " + heyUA
 		header.Set("User-Agent", ua)
 	}
+	log.Debugf("Final Headers: %v", header)
 
 	req.Header = header
 
@@ -234,6 +251,7 @@ func main() {
 		H2:                 *h2,
 		ProxyAddr:          proxyURL,
 		Output:             *output,
+		LogFile:            logFile,
 	}
 	w.Init()
 
@@ -275,6 +293,14 @@ func parseInputWithRegexp(input, regx string) ([]string, error) {
 		return nil, fmt.Errorf("could not parse the provided input; input = %v", input)
 	}
 	return matches, nil
+}
+
+func openLogFile(path string) *os.File {
+	logFile, err := os.OpenFile(path, os.O_WRONLY|os.O_APPEND|os.O_CREATE, 0644)
+	if err != nil {
+		log.Fatal(err)
+	}
+	return logFile
 }
 
 type headerSlice []string
